@@ -7,10 +7,15 @@ func Sum(numbers []int) (sum int) {
 	return sum
 }
 
-func SumAll(numberSlices ...[]int) []int {
+func SumAllTails(numberSlices ...[]int) []int {
 	var sums []int
 	for _, numbers := range numberSlices {
-		sums = append(sums, Sum(numbers))
+		if len(numbers) == 0 {
+			sums = append(sums, 0)
+		} else {
+			tail := numbers[1:]
+			sums = append(sums, Sum(tail))
+		}
 	}
 
 	return sums
