@@ -1,6 +1,7 @@
 package context
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,6 +11,21 @@ import (
 type SpyStore struct {
 	response  string
 	cancelled bool
+	t         *testing.T
+}
+
+func (s *SpyStore) assertWasCancelled() {
+	s.t.Helper()
+	if !s.cancelled {
+		s.t.Error("store was not told to cancelled")
+	}
+}
+
+func (s *SpyStore) assertWasNotCancelled() {
+	s.t.Helper()
+	if s.cancelled {
+		s.t.Error("store was told to cancelled")
+	}
 }
 
 func (s *SpyStore) Fetch() string {
@@ -22,15 +38,37 @@ func (s *SpyStore) Cancel() {
 }
 
 func TestServer(t *testing.T) {
-	data := "hello, world"
-	server := Server(&SpyStore{response: data})
+	t.Run("returns data from store", func(t *testing.T) {
+		data := "hello, world"
+		store := &SpyStore{response: data, t: t}
+		server := Server(store)
 
-	request := httptest.NewRequest(http.MethodGet, "/", nil)
-	response := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
 
-	server.ServeHTTP(response, request)
+		server.ServeHTTP(response, request)
 
-	if response.Body.String() != data {
-		t.Errorf("got %s want %s", response.Body.String(), data)
-	}
+		if response.Body.String() != data {
+			t.Errorf("got %s want %s", response.Body.String(), data)
+		}
+
+		store.assertWasNotCancelled()
+	})
+
+	t.Run("tells store to cancel work if request is cancelled", func(t *testing.T) {
+		data := "hello, world"
+		store := &SpyStore{response: data, t: t}
+		server := Server(store)
+
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		cancellingCtx, cancel := context.WithCancel(request.Context())
+		request = request.WithContext(cancellingCtx)
+		time.AfterFunc(5*time.Millisecond, cancel)
+
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+
+		store.assertWasCancelled()
+	})
 }
