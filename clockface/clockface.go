@@ -1,6 +1,9 @@
 package clockface
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 type Point struct {
 	X float64
@@ -8,5 +11,20 @@ type Point struct {
 }
 
 func SecondHand(tm time.Time) Point {
-	return Point{150, 60}
+	p := secondHandPoint(tm)
+	p = Point{p.X * secondHandLength, p.Y * secondHandLength}
+	p = Point{p.X, -p.Y}
+	p = Point{p.X + clockCenterX, p.Y + clockCenterY}
+	return p
+}
+
+func secondsInRadians(t time.Time) float64 {
+	return (math.Pi / (30 / (float64(t.Second()))))
+}
+
+func secondHandPoint(t time.Time) Point {
+	angle := secondsInRadians(t)
+	y := math.Cos(angle)
+	x := math.Sin(angle)
+	return Point{x, y}
 }
