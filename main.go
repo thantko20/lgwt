@@ -1,7 +1,7 @@
 package main
 
 import (
-	"lgwt/clockface"
+	"lgwt/clockface/svg"
 	"os"
 	"time"
 )
@@ -9,5 +9,5 @@ import (
 func main() {
 
 	t := time.Now()
-	clockface.SVGWriter(os.Stdout, t)
+	svg.Write(os.Stdout, t)
 }
