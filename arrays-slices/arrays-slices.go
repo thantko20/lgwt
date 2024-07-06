@@ -18,27 +18,29 @@ func SumAllTails(numberSlices ...[]int) []int {
 	}, sums)
 }
 
-func Reduce[T any, P any](collection []T, fn func(acc P, curr T) P, initial P) P {
+func Reduce[T, P any](collection []T, fn func(acc P, curr T) P, initial P) P {
 	for _, item := range collection {
 		initial = fn(initial, item)
 	}
 	return initial
 }
 
+type Amount float64
+
 type Transaction struct {
 	From, To string
-	Sum      float64
+	Sum      Amount
 }
 
-func BalanceFor(transactions []Transaction, name string) float64 {
-	var balance float64
-	for _, t := range transactions {
+func BalanceFor(transactions []Transaction, name string) Amount {
+	adjustBalance := func(b Amount, t Transaction) Amount {
 		if t.From == name {
-			balance -= t.Sum
+			return b - t.Sum
 		}
 		if t.To == name {
-			balance += t.Sum
+			return b + t.Sum
 		}
+		return b
 	}
-	return balance
+	return Reduce(transactions, adjustBalance, 0.0)
 }
